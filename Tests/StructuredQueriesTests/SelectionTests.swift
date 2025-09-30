@@ -89,6 +89,37 @@ extension SnapshotTests {
       }
     }
 
+    @Test func reminderListAndReminderCountPayload() {
+      let baseQuery =
+        RemindersList
+        .group(by: \.id)
+        .limit(2)
+        .join(RemindersList.all) { $0.id.eq($1.id) }
+      assertQuery(
+        baseQuery
+          .select {
+            RemindersListAndReminderCountPayload.Columns(
+              payload: RemindersListAndReminderCount.Columns(
+                remindersList: $0,
+                remindersCount: $1.id.count()
+              )
+            )
+          }
+      ) {
+        """
+        SELECT "remindersLists"."id", "remindersLists"."color", "remindersLists"."title", "remindersLists"."position" AS "id", count("remindersLists"."id") AS "color" AS "id"
+        FROM "remindersLists"
+        JOIN "remindersLists" ON ("remindersLists"."id") = ("remindersLists"."id")
+        GROUP BY "remindersLists"."id"
+        LIMIT 2
+        """
+      } results: {
+        """
+        near "AS": syntax error
+        """
+      }
+    }
+
     @Test func outerJoin() {
       assertQuery(
         Reminder
@@ -196,6 +227,11 @@ struct ReminderTitleAndAssignedUserName {
 struct RemindersListAndReminderCount {
   let remindersList: RemindersList
   let remindersCount: Int
+}
+
+@Table
+struct RemindersListAndReminderCountPayload {
+  let payload: RemindersListAndReminderCount
 }
 
 @Table
