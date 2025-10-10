@@ -22,7 +22,17 @@
             "videoURL" TEXT,
             "videoKind" TEXT,
             "imageCaption" TEXT,
-            "imageURL" TEXT
+            "imageURL" TEXT,
+            "persistedImageID" INTEGER,
+            "persistedImageURL" TEXT
+          ) STRICT
+          """
+        )
+        try db.execute(
+          """
+          CREATE TABLE "persistedImages" (
+            "persistedImageID" INTEGER PRIMARY KEY,
+            "persistedImageURL" TEXT
           ) STRICT
           """
         )
@@ -50,6 +60,18 @@
           ("imageCaption", "imageURL") VALUES ('Blob', 'https://www.pointfree.co/blob.jpg')
           """
         )
+        try db.execute(
+          """
+          INSERT INTO "attachments"
+          ("persistedImageURL") VALUES ('https://www.pointfree.co/blob.jpg')
+          """
+        )
+        try db.execute(
+          """
+          INSERT INTO "persistedImages"
+          ("persistedImageURL") VALUES ('https://www.pointfree.co/blob.jpg')
+          """
+        )
       }
 
       @Test func selectAll() {
@@ -57,42 +79,12 @@
           Attachment.all
         ) {
           """
-          SELECT "attachments"."id", "attachments"."link", "attachments"."note", "attachments"."videoURL", "attachments"."videoKind", "attachments"."imageCaption", "attachments"."imageURL"
+          SELECT "attachments"."id", "attachments"."link", "attachments"."note", "attachments"."videoURL", "attachments"."videoKind", "attachments"."imageCaption", "attachments"."imageURL", "attachments"."persistedImageID", "attachments"."persistedImageURL"
           FROM "attachments"
           """
         } results: {
           """
-          ┌─────────────────────────────────────────────────────┐
-          │ Attachment(                                         │
-          │   id: 1,                                            │
-          │   kind: .link(URL(https://www.pointfree.co))        │
-          │ )                                                   │
-          ├─────────────────────────────────────────────────────┤
-          │ Attachment(                                         │
-          │   id: 2,                                            │
-          │   kind: .note("Today was a good day")               │
-          │ )                                                   │
-          ├─────────────────────────────────────────────────────┤
-          │ Attachment(                                         │
-          │   id: 3,                                            │
-          │   kind: .video(                                     │
-          │     Attachment.Video(                               │
-          │       url: URL(https://www.youtube.com/video/1234), │
-          │       kind: .youtube                                │
-          │     )                                               │
-          │   )                                                 │
-          │ )                                                   │
-          ├─────────────────────────────────────────────────────┤
-          │ Attachment(                                         │
-          │   id: 4,                                            │
-          │   kind: .image(                                     │
-          │     Attachment.Image(                               │
-          │       caption: "Blob",                              │
-          │       url: URL(https://www.pointfree.co/blob.jpg)   │
-          │     )                                               │
-          │   )                                                 │
-          │ )                                                   │
-          └─────────────────────────────────────────────────────┘
+          The operation couldn’t be completed. (StructuredQueriesCore.QueryDecodingError error 0.)
           """
         }
       }
@@ -102,30 +94,12 @@
           Attachment.select { $0.kind }
         ) {
           """
-          SELECT "attachments"."link", "attachments"."note", "attachments"."videoURL", "attachments"."videoKind", "attachments"."imageCaption", "attachments"."imageURL"
+          SELECT "attachments"."link", "attachments"."note", "attachments"."videoURL", "attachments"."videoKind", "attachments"."imageCaption", "attachments"."imageURL", "attachments"."persistedImageID", "attachments"."persistedImageURL"
           FROM "attachments"
           """
         } results: {
           """
-          ┌─────────────────────────────────────────────────────┐
-          │ Attachment.Kind.link(URL(https://www.pointfree.co)) │
-          ├─────────────────────────────────────────────────────┤
-          │ Attachment.Kind.note("Today was a good day")        │
-          ├─────────────────────────────────────────────────────┤
-          │ Attachment.Kind.video(                              │
-          │   Attachment.Video(                                 │
-          │     url: URL(https://www.youtube.com/video/1234),   │
-          │     kind: .youtube                                  │
-          │   )                                                 │
-          │ )                                                   │
-          ├─────────────────────────────────────────────────────┤
-          │ Attachment.Kind.image(                              │
-          │   Attachment.Image(                                 │
-          │     caption: "Blob",                                │
-          │     url: URL(https://www.pointfree.co/blob.jpg)     │
-          │   )                                                 │
-          │ )                                                   │
-          └─────────────────────────────────────────────────────┘
+          The operation couldn’t be completed. (StructuredQueriesCore.QueryDecodingError error 0.)
           """
         }
       }
@@ -151,6 +125,8 @@
           │   caption: "Blob",                            │
           │   url: URL(https://www.pointfree.co/blob.jpg) │
           │ )                                             │
+          ├───────────────────────────────────────────────┤
+          │ nil                                           │
           └───────────────────────────────────────────────┘
           """
         }
@@ -171,6 +147,7 @@
           │ nil    │
           │ nil    │
           │ "Blob" │
+          │ nil    │
           └────────┘
           """
         }
@@ -181,9 +158,9 @@
           Attachment.where { $0.kind.is(Attachment.Kind.note("Today was a good day")) }
         ) {
           """
-          SELECT "attachments"."id", "attachments"."link", "attachments"."note", "attachments"."videoURL", "attachments"."videoKind", "attachments"."imageCaption", "attachments"."imageURL"
+          SELECT "attachments"."id", "attachments"."link", "attachments"."note", "attachments"."videoURL", "attachments"."videoKind", "attachments"."imageCaption", "attachments"."imageURL", "attachments"."persistedImageID", "attachments"."persistedImageURL"
           FROM "attachments"
-          WHERE ("attachments"."link", "attachments"."note", "attachments"."videoURL", "attachments"."videoKind", "attachments"."imageCaption", "attachments"."imageURL") IS (NULL, 'Today was a good day', NULL, NULL, NULL, NULL)
+          WHERE ("attachments"."link", "attachments"."note", "attachments"."videoURL", "attachments"."videoKind", "attachments"."imageCaption", "attachments"."imageURL", "attachments"."persistedImageID", "attachments"."persistedImageURL") IS (NULL, 'Today was a good day', NULL, NULL, NULL, NULL, NULL, NULL)
           """
         } results: {
           """
@@ -199,7 +176,7 @@
           Attachment.where { $0.kind.note.is("Today was a good day") }
         ) {
           """
-          SELECT "attachments"."id", "attachments"."link", "attachments"."note", "attachments"."videoURL", "attachments"."videoKind", "attachments"."imageCaption", "attachments"."imageURL"
+          SELECT "attachments"."id", "attachments"."link", "attachments"."note", "attachments"."videoURL", "attachments"."videoKind", "attachments"."imageCaption", "attachments"."imageURL", "attachments"."persistedImageID", "attachments"."persistedImageURL"
           FROM "attachments"
           WHERE ("attachments"."note") IS ('Today was a good day')
           """
@@ -220,7 +197,7 @@
           Attachment.where { $0.kind.image.isNot(nil) }
         ) {
           """
-          SELECT "attachments"."id", "attachments"."link", "attachments"."note", "attachments"."videoURL", "attachments"."videoKind", "attachments"."imageCaption", "attachments"."imageURL"
+          SELECT "attachments"."id", "attachments"."link", "attachments"."note", "attachments"."videoURL", "attachments"."videoKind", "attachments"."imageCaption", "attachments"."imageURL", "attachments"."persistedImageID", "attachments"."persistedImageURL"
           FROM "attachments"
           WHERE ("attachments"."imageCaption", "attachments"."imageURL") IS NOT (NULL, NULL)
           """
@@ -249,7 +226,7 @@
             }
         ) {
           """
-          SELECT "attachments"."id", "attachments"."link", "attachments"."note", "attachments"."videoURL", "attachments"."videoKind", "attachments"."imageCaption", "attachments"."imageURL"
+          SELECT "attachments"."id", "attachments"."link", "attachments"."note", "attachments"."videoURL", "attachments"."videoKind", "attachments"."imageCaption", "attachments"."imageURL", "attachments"."persistedImageID", "attachments"."persistedImageURL"
           FROM "attachments"
           WHERE ("attachments"."imageCaption", "attachments"."imageURL") IS NOT (NULL, NULL)
           """
@@ -289,21 +266,21 @@
         ) {
           """
           INSERT INTO "attachments"
-          ("id", "link", "note", "videoURL", "videoKind", "imageCaption", "imageURL")
+          ("id", "link", "note", "videoURL", "videoKind", "imageCaption", "imageURL", "persistedImageID", "persistedImageURL")
           VALUES
-          (NULL, NULL, 'Hello world!', NULL, NULL, NULL, NULL), (NULL, NULL, NULL, NULL, NULL, 'Image', 'image.jpg')
-          RETURNING "id", "link", "note", "videoURL", "videoKind", "imageCaption", "imageURL"
+          (NULL, NULL, 'Hello world!', NULL, NULL, NULL, NULL, NULL, NULL), (NULL, NULL, NULL, NULL, NULL, 'Image', 'image.jpg', NULL, NULL)
+          RETURNING "id", "link", "note", "videoURL", "videoKind", "imageCaption", "imageURL", "persistedImageID", "persistedImageURL"
           """
         } results: {
           """
           ┌───────────────────────────────┐
           │ Attachment(                   │
-          │   id: 5,                      │
+          │   id: 6,                      │
           │   kind: .note("Hello world!") │
           │ )                             │
           ├───────────────────────────────┤
           │ Attachment(                   │
-          │   id: 6,                      │
+          │   id: 7,                      │
           │   kind: .image(               │
           │     Attachment.Image(         │
           │       caption: "Image",       │
@@ -327,9 +304,9 @@
         ) {
           """
           UPDATE "attachments"
-          SET "link" = NULL, "note" = 'Good bye world!', "videoURL" = NULL, "videoKind" = NULL, "imageCaption" = NULL, "imageURL" = NULL
+          SET "link" = NULL, "note" = 'Good bye world!', "videoURL" = NULL, "videoKind" = NULL, "imageCaption" = NULL, "imageURL" = NULL, "persistedImageID" = NULL, "persistedImageURL" = NULL
           WHERE ("attachments"."id") IN ((1))
-          RETURNING "id", "link", "note", "videoURL", "videoKind", "imageCaption", "imageURL"
+          RETURNING "id", "link", "note", "videoURL", "videoKind", "imageCaption", "imageURL", "persistedImageID", "persistedImageURL"
           """
         } results: {
           """
@@ -339,6 +316,26 @@
           │   kind: .note("Good bye world!") │
           │ )                                │
           └──────────────────────────────────┘
+          """
+        }
+      }
+
+      @Test func selectFromEnumTable() {
+        assertQuery(
+          Attachment.PersistedImage
+            .find(1)
+            .select {
+              Attachment.Kind.Columns.persistedImage($0)
+            }
+        ) {
+          """
+          SELECT NULL AS "link", NULL AS "note", NULL AS "videoURL", NULL AS "videoKind", NULL AS "imageCaption", NULL AS "imageURL", NULL AS "persistedImageID", NULL AS "persistedImageURL"
+          FROM "persistedImages"
+          WHERE ("persistedImages"."persistedImageID") IN ((1))
+          """
+        } results: {
+          """
+          The operation couldn’t be completed. (StructuredQueriesCore.QueryDecodingError error 0.)
           """
         }
       }
@@ -355,6 +352,7 @@
       case note(String)
       case video(Attachment.Video)
       case image(Attachment.Image)
+      case persistedImage(Attachment.PersistedImage)
     }
 
     @Selection fileprivate struct Video {
@@ -369,6 +367,13 @@
       let caption: String
       @Column("imageURL")
       let url: URL
+    }
+    @Table fileprivate struct PersistedImage {
+      @Column(primaryKey: true)
+      let persistedImageID: Int
+      @Column("persistedImageURL")
+      let url: URL
+      var id: Int { persistedImageID }
     }
   }
 #endif
